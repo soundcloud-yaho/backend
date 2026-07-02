@@ -1,0 +1,1 @@
+# [의존성] fastapi, uvicorn, sqlalchemy, psycopg2-binary, httpx — 버전 고정 필수
