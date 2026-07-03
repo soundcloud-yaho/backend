@@ -1,0 +1,25 @@
+# cronjob-sync.yaml
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: football-data-sync
+spec:
+  schedule: "0 * * * *" # 매시간 정각마다 실행
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: football-data-sync
+              image: football-backend:local
+              imagePullPolicy: Never
+              command: ["python", "-m", "sync.sync_matches"]
+              envFrom:
+                - configMapRef:
+                    name: football-config
+                - secretRef:
+                    name: football-secret
