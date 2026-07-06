@@ -61,3 +61,52 @@ ALB → FastAPI Pod (Spot Worker 노드그룹, target-type: ip)
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
+
+
+```bash
+docker test
+# backend terminal에서 
+# docker network 생성
+docker network create football-net
+
+# postgres container 생성
+docker run -d \
+  --name football-postgres \
+  --network football-net \
+  -p 5432:5432 \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=football_db \
+  postgres:15
+
+# image build
+docker build -t football-backend:local .
+
+# backend container 생성
+docker run -d \
+  --name football-backend \
+  --network football-net \
+  -p 8000:8000 \
+  -e APP_NAME="Football Match API" \
+  -e DB_HOST=football-postgres \
+  -e DB_PORT=5432 \
+  -e DB_NAME=football_db \
+  -e DB_USER=postgres \
+  -e DB_PASSWORD=password \
+  -e FOOTBALL_API_KEY="849ede26d4d84d96aecb7757457a042e" \
+  football-backend:local
+
+# create table
+docker exec -it football-backend python -m scripts.create_tables
+
+# 경기 데이터 동기화
+docker exec -it football-backend python -m sync.sync_matches
+
+# API 확인하기
+
+curl http://localhost:8000/health
+curl http://localhost:8000/matches
+curl "http://localhost:8000/matches?team=Switzerland"
+
+```
+
