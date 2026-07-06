@@ -1,0 +1,22 @@
+# [Docker] python-slim 멀티스테이지, non-root 유저, uvicorn 기동
+
+# 파이썬 3.11 slim 이미지 사용 (풀 이미지보다 가벼워 빌드/배포 속도와 용량에 유리)
+FROM python:3.11-slim
+
+# 이후 모든 명령어가 실행되는 기준 디렉터리
+WORKDIR /app
+
+# requirements.txt만 먼저 복사한다.
+# 소스 코드보다 의존성 파일을 먼저 복사해야, 코드만 변경됐을 때
+# pip install 레이어가 캐시에서 재사용되어 빌드가 빨라진다.
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 의존성 설치 이후에 전체 소스 코드 복사 (코드가 바뀌면 이 레이어부터 다시 빌드됨)
+COPY . .
+
+# 컨테이너가 사용할 포트 명시 (문서화 목적, 실제 포트 바인딩은 실행 시 -p 옵션으로 결정)
+EXPOSE 8000
+
+# 컨테이너 시작 시 FastAPI 앱을 uvicorn으로 실행
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
