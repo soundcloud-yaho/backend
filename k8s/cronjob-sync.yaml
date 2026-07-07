@@ -15,8 +15,8 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: football-data-sync
-              image: football-backend:local
-              imagePullPolicy: Never
+              image: <ECR_URI>/backend:<SHA7>
+              imagePullPolicy: IfNotPresent
               command: ["python", "-m", "sync.sync_matches"]
               envFrom:
                 - configMapRef:
