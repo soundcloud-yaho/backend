@@ -76,7 +76,7 @@ docker run -d \
   -p 5432:5432 \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=football_db \
+  -e POSTGRES_DB=worldcup \
   postgres:15
 
 # image build
@@ -86,14 +86,14 @@ docker build -t football-backend:local .
 docker run -d \
   --name football-backend \
   --network football-net \
-  -p 8000:8000 \
+  -p 8080:8080 \
   -e APP_NAME="Football Match API" \
   -e DB_HOST=football-postgres \
   -e DB_PORT=5432 \
-  -e DB_NAME=football_db \
+  -e DB_NAME=worldcup \
   -e DB_USER=postgres \
   -e DB_PASSWORD=password \
-  -e FOOTBALL_API_KEY="849ede26d4d84d96aecb7757457a042e" \
+  -e FOOTBALL_API_KEY="football.org에서 발급받은 키" \
   football-backend:local
 
 # create table
@@ -104,9 +104,9 @@ docker exec -it football-backend python -m sync.sync_matches
 
 # API 확인하기
 
-curl http://localhost:8000/health
-curl http://localhost:8000/matches
-curl "http://localhost:8000/matches?team=Switzerland"
+curl http://localhost:8080/health
+curl http://localhost:8080/matches
+curl "http://localhost:8080/matches?team=Switzerland"
 
 ```
 
