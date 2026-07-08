@@ -1,15 +1,43 @@
-# [엔트리] FastAPI 앱 생성, 라우터 등록, /healthz(Liveness) /readyz(Readiness) 엔드포인트
+# [엔트리] FastAPI 앱 생성, 라우터 등록, 헬스체크, 지연시간 수집
 
-from fastapi import FastAPI
+import logging
+import time
+
+from fastapi import FastAPI, Request
 
 from app.core.database import Base, writer_engine
 from app.routers import matches
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("api_latency")
 
 app = FastAPI(
     title="2026 FIFA 월드컵 API",
     description="축구 경기 데이터를 조회하는 FastAPI 서버",
     version="2.0.0",
 )
+
+
+@app.middleware("http")
+async def latency_middleware(request: Request, call_next):
+    start_time = time.perf_counter()
+
+    response = await call_next(request)
+
+    duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+
+    logger.info(
+        "method=%s path=%s status=%s duration_ms=%s",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
+
+    response.headers["X-Response-Time-ms"] = str(duration_ms)
+
+    return response
+
 
 # 앱 시작 시 정의된 ORM 모델 기준으로 테이블이 없으면 자동 생성
 Base.metadata.create_all(bind=writer_engine)

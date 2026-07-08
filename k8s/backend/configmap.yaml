@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  APP_NAME: "Football Match API"
+  APP_PORT: "8080"
+  ENV: "prod"

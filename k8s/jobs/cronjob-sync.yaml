@@ -3,19 +3,17 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: football-data-sync
+  name: worldcup-sync
 spec:
-  schedule: "0 * * * *" # 매시간 정각마다 실행
-  successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 3
+  schedule: "0 * * * *"
   jobTemplate:
     spec:
       template:
         spec:
           restartPolicy: OnFailure
           containers:
-            - name: football-data-sync
-              image: <ECR_URI>/backend:<SHA7>
+            - name: sync
+              image: <ECR_URI>/soundcloud-prod/backend:<SHA7>
               imagePullPolicy: IfNotPresent
               command: ["python", "-m", "sync.sync_matches"]
               envFrom:

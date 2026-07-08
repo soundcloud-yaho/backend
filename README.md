@@ -76,7 +76,7 @@ docker run -d \
   -p 5432:5432 \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=password \
-  -e POSTGRES_DB=worldcup \
+  -e POSTGRES_DB=football_db \
   postgres:15
 
 # image build
@@ -86,14 +86,14 @@ docker build -t football-backend:local .
 docker run -d \
   --name football-backend \
   --network football-net \
-  -p 8080:8080 \
+  -p 8000:8000 \
   -e APP_NAME="Football Match API" \
   -e DB_HOST=football-postgres \
   -e DB_PORT=5432 \
-  -e DB_NAME=worldcup \
+  -e DB_NAME=football_db \
   -e DB_USER=postgres \
   -e DB_PASSWORD=password \
-  -e FOOTBALL_API_KEY="football.org에서 발급받은 키" \
+  -e FOOTBALL_API_KEY="849ede26d4d84d96aecb7757457a042e" \
   football-backend:local
 
 # create table
@@ -104,9 +104,28 @@ docker exec -it football-backend python -m sync.sync_matches
 
 # API 확인하기
 
-curl http://localhost:8080/health
-curl http://localhost:8080/matches
-curl "http://localhost:8080/matches?team=Switzerland"
+curl http://localhost:8000/health
+curl http://localhost:8000/matches
+curl "http://localhost:8000/matches?team=Switzerland"
 
 ```
 
+```bash
+# EKS Backend 배포 순서
+
+# 1. EKS kubeconfig 연결
+aws eks update-kubeconfig --region ap-northeast-2 --name soundcloud-minimal-eks
+
+# 2. DB Secret 생성
+# terraform 적용할 폴더 터미널에서 (ex)prod)
+DB_PASSWORD=postgres ~/project03/backend/scripts/apply-backend-secret.sh
+
+# 3. Backend 배포
+# backend 터미널에서
+kubectl apply -f k8s/backend/
+
+# 4. 확인
+kubectl get pods
+kubectl logs -l app=backend --tail=100
+kubectl port-forward svc/backend-service 8080:8080
+```
