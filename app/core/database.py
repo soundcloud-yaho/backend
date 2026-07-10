@@ -7,7 +7,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 from app.core.config import settings
-
+from typing import Optional
 
 def make_database_url(host: str) -> str:
     user = quote_plus(settings.DB_USER)
@@ -19,7 +19,7 @@ def make_database_url(host: str) -> str:
     )
 
 
-def get_database_url(url_env_name: str, host_value: str | None, fallback_name: str) -> str:
+def get_database_url(url_env_name: str, host_value: Optional[str], fallback_name: str) -> str:
     """
     1순위: WRITABLE_URL / READONLY_URL 전체 URL 사용
     2순위: DB_WRITER_HOST / DB_READER_HOST + DB_USER 조합
