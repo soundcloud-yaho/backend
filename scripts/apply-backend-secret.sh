@@ -12,5 +12,5 @@ DB_USER=$(terraform output -raw master_username)
 kubectl delete secret backend-db-secret --ignore-not-found
 
 kubectl create secret generic backend-db-secret \
-  --from-literal=WRITABLE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${WRITER_ENDPOINT}:${DB_PORT}/${DB_NAME}" \
-  --from-literal=READONLY_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${READER_ENDPOINT}:${DB_PORT}/${DB_NAME}"
+  WRITABLE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${WRITER_ENDPOINT}:${DB_PORT}/${DB_NAME}" \
+  READONLY_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${READER_ENDPOINT}:${DB_PORT}/${DB_NAME}"
