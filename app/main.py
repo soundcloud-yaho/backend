@@ -4,7 +4,7 @@ import logging
 import time
 
 from fastapi import FastAPI, Request
-
+from prometheus_fastapi_instrumentator import Instrumentator
 from app.core.database import Base, writer_engine
 from app.routers import matches
 
@@ -17,6 +17,7 @@ app = FastAPI(
     version="2.0.0",
 )
 
+Instrumentator().instrument(app).expose(app) # /metrics 엔드포인트 노출
 
 @app.middleware("http")
 async def latency_middleware(request: Request, call_next):
@@ -40,7 +41,7 @@ async def latency_middleware(request: Request, call_next):
 
 
 # 앱 시작 시 정의된 ORM 모델 기준으로 테이블이 없으면 자동 생성
-Base.metadata.create_all(bind=writer_engine)
+#Base.metadata.create_all(bind=writer_engine)
 
 app.include_router(matches.router)
 
