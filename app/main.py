@@ -5,6 +5,9 @@ import time
 
 from fastapi import FastAPI, Request
 from prometheus_fastapi_instrumentator import Instrumentator
+from fastapi.middleware.cors import CORSMiddleware
+
+
 from app.core.database import Base, writer_engine
 from app.routers import matches
 
@@ -18,6 +21,24 @@ app = FastAPI(
 )
 
 Instrumentator().instrument(app).expose(app) # /metrics 엔드포인트 노출
+
+# 프론트엔드 주소
+origins = [
+    "http://localhost:3000",   # React 기본
+    "http://localhost:5173",   # Vite 기본
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    # 나중에 프론트 배포 주소 추가
+    # "https://프론트도메인"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.middleware("http")
 async def latency_middleware(request: Request, call_next):
