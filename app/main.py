@@ -8,7 +8,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi.middleware.cors import CORSMiddleware
 
 
-from app.core.database import Base, writer_engine
+# from app.core.database import Base, writer_engine
 from app.routers import matches
 
 logging.basicConfig(level=logging.INFO)
