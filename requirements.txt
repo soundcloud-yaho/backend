@@ -6,4 +6,4 @@ sqlalchemy==2.0.51
 psycopg2-binary==2.9.12
 httpx==0.22.0
 pytest==8.4.1
-prometheus-fastapi-instrumentator==5.7.1
+prometheus-fastapi-instrumentator==8.0.2
