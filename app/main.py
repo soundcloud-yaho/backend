@@ -7,8 +7,7 @@ from fastapi import FastAPI, Request
 from prometheus_fastapi_instrumentator import Instrumentator
 from fastapi.middleware.cors import CORSMiddleware
 
-
-# from app.core.database import Base, writer_engine
+from app.core.database import Base, writer_engine
 from app.routers import matches
 
 logging.basicConfig(level=logging.INFO)
@@ -20,16 +19,16 @@ app = FastAPI(
     version="2.0.0",
 )
 
-Instrumentator().instrument(app).expose(app) # /metrics 엔드포인트 노출
+Instrumentator().instrument(app).expose(app)  # /metrics 엔드포인트 노출
 
 # 프론트엔드 주소
 origins = [
-    "http://localhost:3000",   # React 기본
-    "http://localhost:5173",   # Vite 기본
+    "http://localhost:3000",
+    "http://localhost:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
-    # 나중에 프론트 배포 주소 추가
-    # "https://프론트도메인"
+    "https://rubao.store",
+    "https://www.rubao.store",
 ]
 
 app.add_middleware(
@@ -43,9 +42,7 @@ app.add_middleware(
 @app.middleware("http")
 async def latency_middleware(request: Request, call_next):
     start_time = time.perf_counter()
-
     response = await call_next(request)
-
     duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
     logger.info(
@@ -55,14 +52,12 @@ async def latency_middleware(request: Request, call_next):
         response.status_code,
         duration_ms,
     )
-
     response.headers["X-Response-Time-ms"] = str(duration_ms)
-
     return response
 
 
 # 앱 시작 시 정의된 ORM 모델 기준으로 테이블이 없으면 자동 생성
-#Base.metadata.create_all(bind=writer_engine)
+Base.metadata.create_all(bind=writer_engine)
 
 app.include_router(matches.router)
 
