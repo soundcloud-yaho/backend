@@ -15,3 +15,5 @@ class Settings:
     DB_PASSWORD: str = os.getenv("DB_PASSWORD", "")
 
     FOOTBALL_DATA_API_KEY: str = os.getenv("FOOTBALL_DATA_API_KEY", "")
+
+settings = Settings()
