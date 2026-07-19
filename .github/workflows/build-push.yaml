@@ -1,7 +1,7 @@
 # [CI] master 푸시 시 Docker 이미지 빌드 -> ECR Push
 # 이미지 태그: Git commit SHA 앞 7자리
 
-name: Build and Push to ECR
+name: Build and Push Backend Image to ECR
 
 on:
   push:
@@ -20,15 +20,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+
 
       - name: Login to Amazon ECR
         id: login-ecr
