@@ -1,4 +1,5 @@
-# [CI] main 푸시 시 Docker 빌드 -> ECR 푸시 (태그: git SHA 앞 7자리)
+# [CI] master 푸시 시 Docker 이미지 빌드 -> ECR Push
+# 이미지 태그: Git commit SHA 앞 7자리
 
 name: Build and Push to ECR
 
@@ -7,9 +8,17 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: backend
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -19,20 +28,27 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-northeast-2
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          IMAGE=${{ secrets.ECR_URI }}/worldcup-backend
-          TAG=${GITHUB_SHA::7}
+          set -euo pipefail
 
-          # latest 태그 대신 커밋 SHA 7자리를 태그로 쓰는 이유:
-          # latest는 배포될 때마다 같은 태그를 덮어써서 현재 떠 있는 이미지가
-          # 어떤 커밋에서 빌드됐는지 알 수 없고, 문제가 생겨도 이전 버전으로
-          # 정확히 롤백하기 어렵다. 커밋 SHA를 태그로 쓰면 이미지와 커밋이
-          # 1:1로 매핑되어 배포 이력 추적과 특정 버전 롤백이 가능해진다.
-          docker build -t $IMAGE:$TAG .
-          docker push $IMAGE:$TAG
+          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}"
+          TAG="${GITHUB_SHA::7}"
+
+          echo "Docker image: ${IMAGE}:${TAG}"
+
+          docker build \
+            --tag "${IMAGE}:${TAG}" \
+            .
+
+          docker push "${IMAGE}:${TAG}"
+
+          echo "ECR Push 완료: ${IMAGE}:${TAG}"

@@ -1,5 +1,46 @@
-.venv
-__pycache__
-*.pyc
+# Git
 .git
+.gitignore
+.github
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables and secrets
 .env
+.env.*
+!.env.example
+
+# Test and coverage files
+tests/
+.coverage
+htmlcov/
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local logs and temporary files
+*.log
+*.tmp
+tmp/
+
+# Docker-related local files
+docker-compose*.yml
+Dockerfile*
+!Dockerfile
+
+# Documentation
+README.md
