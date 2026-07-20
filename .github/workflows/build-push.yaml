@@ -1,5 +1,5 @@
-# [CI] master 푸시 시 Backend Docker 이미지 빌드 -> ECR 푸시
-# 이미지 태그는 Git Commit SHA 앞 7자리를 사용
+# [CI] master 푸시 시 Docker 이미지 빌드 -> ECR Push
+# 이미지 태그: Git commit SHA 앞 7자리
 
 name: Build and Push Backend Image to ECR
 
@@ -29,23 +29,24 @@ jobs:
 
 
       - name: Login to Amazon ECR
+        id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-
-      - name: Check Dockerfile
-        run: test -f Dockerfile
-
-
-      - name: Build and Push Backend Image
-        shell: bash
+      - name: Build and push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          IMAGE="201243087060.dkr.ecr.ap-northeast-2.amazonaws.com/soundcloud-prod/backend"
+          set -euo pipefail
+
+          IMAGE="${ECR_REGISTRY}/soundcloud-prod/backend"
           TAG="${GITHUB_SHA::7}"
 
-          echo "Backend Image: ${IMAGE}:${TAG}"
+          echo "Docker image: ${IMAGE}:${TAG}"
 
           docker build \
-            -t "${IMAGE}:${TAG}" \
+            --tag "${IMAGE}:${TAG}" \
             .
 
           docker push "${IMAGE}:${TAG}"
+
+          echo "ECR Push 완료: ${IMAGE}:${TAG}"
