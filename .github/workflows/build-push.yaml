@@ -11,10 +11,6 @@ on:
 permissions:
   contents: read
 
-env:
-  AWS_REGION: ap-northeast-2
-  ECR_REPOSITORY: backend
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -29,7 +25,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ap-northeast-2
 
 
       - name: Login to Amazon ECR
@@ -42,7 +38,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          IMAGE="${ECR_REGISTRY}/${ECR_REPOSITORY}"
+          IMAGE="${ECR_REGISTRY}/backend"
           TAG="${GITHUB_SHA::7}"
 
           echo "Docker image: ${IMAGE}:${TAG}"
