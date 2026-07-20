@@ -38,7 +38,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          IMAGE="${ECR_REGISTRY}/backend"
+          IMAGE="${ECR_REGISTRY}/soundcloud-prod/backend"
           TAG="${GITHUB_SHA::7}"
 
           echo "Docker image: ${IMAGE}:${TAG}"
