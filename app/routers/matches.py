@@ -1,3 +1,16 @@
+from datetime import date, datetime, timedelta
+from typing import Optional, List
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import or_
+from sqlalchemy.orm import Session, joinedload
+
+from app.core.database import get_reader_db
+from app.models.schemas import Match, MatchSchema, PaginatedMatchSchema, Team
+
+router = APIRouter(prefix="/matches", tags=["matches"])
+
+
 @router.get("", response_model=List[MatchSchema])
 def get_matches(
     date: Optional[date] = None,
