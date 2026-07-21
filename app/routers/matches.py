@@ -1,9 +1,3 @@
-# [API] 경기 조회 API — Reader 엔드포인트 사용
-# GET /matches
-# GET /matches/all
-# GET /matches/today
-# GET /matches/{match_id}
-
 from datetime import date, datetime, timedelta
 from typing import Optional, List
 
