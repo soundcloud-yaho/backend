@@ -49,3 +49,93 @@ def get_matches(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/all", response_model=PaginatedMatchSchema)
+def get_all_matches(
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_reader_db),
+):
+    """
+    페이지네이션 경기 목록 조회
+    - /matches/all?page=1&limit=20
+    """
+    try:
+        offset = (page - 1) * limit
+        total = db.query(Match).count()
+
+        matches = (
+            db.query(Match)
+            .options(
+                joinedload(Match.home_team),
+                joinedload(Match.away_team),
+            )
+            .order_by(Match.match_date.asc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+
+        return PaginatedMatchSchema(
+            total=total,
+            page=page,
+            limit=limit,
+            matches=matches,
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/today", response_model=List[MatchSchema])
+def get_today_matches(
+    db: Session = Depends(get_reader_db),
+):
+    """
+    오늘 경기 조회
+    - /matches/today
+    """
+    try:
+        today = date.today()
+        start = datetime.combine(today, datetime.min.time())
+        end = start + timedelta(days=1)
+
+        return (
+            db.query(Match)
+            .options(
+                joinedload(Match.home_team),
+                joinedload(Match.away_team),
+            )
+            .filter(Match.match_date >= start, Match.match_date < end)
+            .order_by(Match.match_date.asc())
+            .all()
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{match_id}", response_model=MatchSchema)
+def get_match_by_id(
+    match_id: int,
+    db: Session = Depends(get_reader_db),
+):
+    """
+    단일 경기 조회
+    - /matches/1
+    """
+    match = (
+        db.query(Match)
+        .options(
+            joinedload(Match.home_team),
+            joinedload(Match.away_team),
+        )
+        .filter(Match.id == match_id)
+        .first()
+    )
+
+    if match is None:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    return match
