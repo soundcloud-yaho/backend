@@ -20,14 +20,14 @@ router = APIRouter(prefix="/matches", tags=["matches"])
 @router.get("", response_model=List[MatchSchema])
 def get_matches(
     date: Optional[date] = None,
-    team: Optional[str] = None,
+    team: Optional[int] = None,
     db: Session = Depends(get_reader_db),
 ):
     """
     경기 목록 조회
     - /matches
     - /matches?date=2026-07-08
-    - /matches?team=Korea
+    - /matches?team=772
     """
     try:
         query = (
@@ -48,8 +48,8 @@ def get_matches(
                 query.join(
                     Team,
                     or_(
-                        Match.home_team_id == Team.id,
-                        Match.away_team_id == Team.id,
+                        Match.home_team_id == Team,
+                        Match.away_team_id == Team,
                     ),
                 )
                 .filter(
