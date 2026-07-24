@@ -24,7 +24,7 @@ instrumentator = Instrumentator(
     inprogress_name="http_requests_inprogress",
     inprogress_labels=True,
 )
-Instrumentator().instrument(app).expose(app)  # /metrics 엔드포인트 노출
+instrumentator.instrument(app).expose(app)  # /metrics 엔드포인트 노출
 
 # 프론트엔드 주소
 origins = [
