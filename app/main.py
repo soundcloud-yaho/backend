@@ -23,8 +23,9 @@ instrumentator = Instrumentator(
     should_instrument_requests_inprogress=True,
     inprogress_name="http_requests_inprogress",
     inprogress_labels=True,
+    excluded_handlers=["/health", "/healthz", "/readyz", "/metrics", "/docs", "/openapi.json"],
 )
-instrumentator.instrument(app).expose(app)  # /metrics 엔드포인트 노출
+instrumentator.instrument(app).expose(app)
 
 # 프론트엔드 주소
 origins = [
