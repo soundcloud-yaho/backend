@@ -60,8 +60,8 @@ writer_engine = create_engine(
 reader_engine = create_engine(
     READONLY_URL,
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=10,
+    pool_size=20,
+    max_overflow=20,
 )
 
 ReaderSessionLocal = sessionmaker(
