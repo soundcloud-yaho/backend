@@ -1,5 +1,6 @@
-# [CI] master 푸시 시 Docker 이미지 빌드 -> ECR Push
-# 이미지 태그: Git commit SHA 앞 7자리
+# [CI/CD] master 푸시 시 Backend Docker 이미지 빌드 → ECR Push
+# ECR Push 완료 후 Infra 레포에 이미지 태그 변경 요청
+# 이미지 태그는 Git Commit SHA 앞 7자리를 사용
 
 name: Build and Push Backend Image to ECR
 
@@ -16,10 +17,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
+      # Repository 코드 가져오기
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # GitHub Secrets에 등록한 AWS Access Key로 인증
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -27,26 +29,46 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
 
-
+      # Amazon ECR 로그인
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push image to ECR
+      # Git Commit SHA 앞 7자리를 이미지 태그로 설정
+      - name: Set Image Tag
+        id: image
+        shell: bash
+        run: |
+          TAG="${GITHUB_SHA::7}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Backend Image Tag: ${TAG}"
+
+      # Backend Docker 이미지 빌드 및 ECR Push
+      - name: Build and Push Backend Image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
+        shell: bash
         run: |
           set -euo pipefail
 
           IMAGE="${ECR_REGISTRY}/soundcloud-prod/backend"
-          TAG="${GITHUB_SHA::7}"
 
-          echo "Docker image: ${IMAGE}:${TAG}"
+          echo "Docker image: ${IMAGE}:${IMAGE_TAG}"
 
           docker build \
-            --tag "${IMAGE}:${TAG}" \
+            --tag "${IMAGE}:${IMAGE_TAG}" \
             .
 
-          docker push "${IMAGE}:${TAG}"
+          docker push "${IMAGE}:${IMAGE_TAG}"
 
-          echo "ECR Push 완료: ${IMAGE}:${TAG}"
+          echo "ECR Push 완료: ${IMAGE}:${IMAGE_TAG}"
+
+      # ECR Push 완료 후 Infra 레포에 이미지 태그 변경 요청
+      - name: Request Backend Image Update
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.INFRA_CICD_TOKEN }}
+          repository: soundcloud-yaho/infra
+          event-type: update-backend-image
+          client-payload: '{"application":"backend","image_tag":"${{ steps.image.outputs.tag }}"}'
