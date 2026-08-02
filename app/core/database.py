@@ -1,94 +1,67 @@
-# [DB] 커넥션 풀 — Writer/Reader 엔드포인트 분리, 풀 사이즈 상한
-
 import os
 from urllib.parse import quote_plus
+from typing import Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
 from app.core.config import settings
-from typing import Optional
 
-def make_database_url(host: str) -> str:
+
+def make_database_url(host: str, driver: str = "postgresql") -> str:
     user = quote_plus(settings.DB_USER)
     password = quote_plus(settings.DB_PASSWORD)
-
-    return (
-        f"postgresql://{user}:{password}"
-        f"@{host}:{settings.DB_PORT}/{settings.DB_NAME}"
-    )
+    return f"{driver}://{user}:{password}@{host}:{settings.DB_PORT}/{settings.DB_NAME}"
 
 
-def get_database_url(url_env_name: str, host_value: Optional[str], fallback_name: str) -> str:
-    """
-    1순위: WRITABLE_URL / READONLY_URL 전체 URL 사용
-    2순위: DB_WRITER_HOST / DB_READER_HOST + DB_USER 조합
-    """
+def get_database_url(url_env_name: str, host_value: Optional[str], fallback_name: str, driver: str = "postgresql") -> str:
     url = os.getenv(url_env_name)
-
     if url:
         return url
-
     if host_value:
-        return make_database_url(host_value)
-
-    raise RuntimeError(
-        f"{url_env_name} 또는 {fallback_name} 환경변수가 필요합니다."
-    )
+        return make_database_url(host_value, driver)
+    raise RuntimeError(f"{url_env_name} 또는 {fallback_name} 환경변수가 필요합니다.")
 
 
-WRITABLE_URL = get_database_url(
-    "WRITABLE_URL",
-    getattr(settings, "DB_WRITER_HOST", None),
-    "DB_WRITER_HOST",
-)
-
-READONLY_URL = get_database_url(
-    "READONLY_URL",
-    getattr(settings, "DB_READER_HOST", None),
-    "DB_READER_HOST",
-)
-
-
+WRITABLE_URL = get_database_url("WRITABLE_URL", getattr(settings, "DB_WRITER_HOST", None), "DB_WRITER_HOST")
 writer_engine = create_engine(
     WRITABLE_URL,
     pool_pre_ping=True,
     pool_size=3,
     max_overflow=3,
 )
-
-reader_engine = create_engine(
-    READONLY_URL,
-    pool_pre_ping=True,
-    pool_size=20,
-    max_overflow=20,
-)
-
-ReaderSessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=reader_engine,
-)
-
 WriterSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=writer_engine,
 )
 
+
+# Reader — matches.py(API 라우터)가 쓰는 것. async로 전환.
+READONLY_URL = get_database_url("READONLY_URL", getattr(settings, "DB_READER_HOST", None), "DB_READER_HOST", driver="postgresql+asyncpg")
+reader_engine = create_async_engine(
+    READONLY_URL,
+    pool_pre_ping=True,
+    pool_size=20,
+    max_overflow=20,
+    pool_timeout=5,
+)
+ReaderSessionLocal = async_sessionmaker(
+    bind=reader_engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+)
+
+
 Base = declarative_base()
 
 
-def get_db():
-    db = ReaderSessionLocal()
-    try:
+async def get_reader_db():
+    async with ReaderSessionLocal() as db:
         yield db
-    finally:
-        db.close()
-
-
-def get_reader_db():
-    yield from get_db()
 
 
 def get_writer_db():
@@ -99,10 +72,10 @@ def get_writer_db():
         db.close()
 
 
-def check_db_connection():
+async def check_db_connection():
     try:
-        with reader_engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
+        async with reader_engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
         return True
     except Exception:
         return False
