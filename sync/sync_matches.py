@@ -8,7 +8,7 @@ from typing import Any
 import httpx
 
 from app.core.config import settings
-from app.core.database import WriterSessionLocal
+from app.core.database import WriterSessionLocal 
 from app.models.schemas import Match, Team
 
 
