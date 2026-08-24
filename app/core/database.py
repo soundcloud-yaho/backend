@@ -24,7 +24,11 @@ def get_database_url(url_env_name: str, host_value: Optional[str], fallback_name
     raise RuntimeError(f"{url_env_name} 또는 {fallback_name} 환경변수가 필요합니다.")
 
 
-WRITABLE_URL = get_database_url("WRITABLE_URL", getattr(settings, "DB_WRITER_HOST", None), "DB_WRITER_HOST")
+WRITABLE_URL = get_database_url(
+    "WRITABLE_URL",
+    getattr(settings, "DB_WRITER_HOST", None),
+    "DB_HOST 또는 DB_WRITER_HOST",
+)
 writer_engine = create_engine(
     WRITABLE_URL,
     pool_pre_ping=True,
@@ -38,8 +42,13 @@ WriterSessionLocal = sessionmaker(
 )
 
 
-# Reader — matches.py(API 라우터)가 쓰는 것. async로 전환.
-READONLY_URL = get_database_url("READONLY_URL", getattr(settings, "DB_READER_HOST", None), "DB_READER_HOST", driver="postgresql+asyncpg")
+# 조회 API는 같은 RDS endpoint에 비동기 드라이버로 연결한다.
+READONLY_URL = get_database_url(
+    "READONLY_URL",
+    getattr(settings, "DB_READER_HOST", None),
+    "DB_HOST 또는 DB_READER_HOST",
+    driver="postgresql+asyncpg",
+)
 reader_engine = create_async_engine(
     READONLY_URL,
     pool_pre_ping=True,

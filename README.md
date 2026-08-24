@@ -10,11 +10,11 @@ Sound_Cloud 프로젝트의 백엔드 레포. FastAPI REST API 서버와 외부 
 
 ```
 ALB → FastAPI Pod (Spot Worker 노드그룹, target-type: ip)
-         ├─ GET /matches, ?date=, ?team=  → Aurora Reader (읽기 전용)
-         └─ (별도 CronJob) 동기화 잡      → football-data.org → Aurora Writer (UPSERT)
+         ├─ GET /matches, ?date=, ?team=  → RDS PostgreSQL (비동기 조회)
+         └─ (별도 CronJob) 동기화 잡      → football-data.org → 동일 RDS PostgreSQL (UPSERT)
 ```
 
-- FastAPI Pod는 **읽기만** 담당한다. 사용자 트래픽이 아무리 몰려도 Aurora 쓰기 경로에는 영향을 주지 않는다.
+- FastAPI 요청 경로는 **조회만** 담당하고, 쓰기는 별도 동기화 CronJob이 수행한다.
 - 동기화 CronJob은 사용자 요청 경로와 완전히 분리된 별도 잡이다. 외부 API가 장애가 나도 서비스는 마지막 동기화 데이터로 계속 응답한다.
 - Pod는 stateless — Spot 회수로 노드가 바뀌어도 잃는 상태가 없다.
 
@@ -27,9 +27,9 @@ ALB → FastAPI Pod (Spot Worker 노드그룹, target-type: ip)
 | `app/main.py` | FastAPI 앱 엔트리포인트, 라우터 등록, `/healthz`(Liveness) · `/readyz`(Readiness) |
 | `app/routers/matches.py` | REST API 3종 — `GET /matches`, `?date=`, `?team=` |
 | `app/core/config.py` | 환경변수 · K8s Secret 로드 (DB 접속정보, football-data API 키) |
-| `app/core/database.py` | SQLAlchemy 커넥션 풀 — **Writer/Reader 엔드포인트 분리**, 풀 사이즈 상한으로 Aurora 커넥션 초과 방지 |
+| `app/core/database.py` | 단일 RDS endpoint 기반 SQLAlchemy 동기·비동기 커넥션 풀 관리 |
 | `app/models/schemas.py` | `matches` / `teams` 테이블 모델 + API 응답 JSON 스키마 (프론트와 합의된 계약, 임의 변경 금지) |
-| `sync/sync_matches.py` | football-data.org 1시간 주기 폴링 → Aurora Writer UPSERT. 무료 티어 한도(분당 10회) 준수 |
+| `sync/sync_matches.py` | football-data.org 1시간 주기 폴링 → RDS PostgreSQL UPSERT. 무료 티어 한도(분당 10회) 준수 |
 | `tests/test_api.py` | API 응답 스키마 검증 |
 
 ---
@@ -49,7 +49,8 @@ ALB → FastAPI Pod (Spot Worker 노드그룹, target-type: ip)
 
 | 변수 | 용도 |
 |---|---|
-| `DB_WRITER_HOST` / `DB_READER_HOST` | Aurora 엔드포인트 (분리) |
+| `DB_HOST` | 단일 RDS PostgreSQL endpoint |
+| `DB_WRITER_HOST` / `DB_READER_HOST` | 배포 전환 기간에만 사용하는 기존 호환 변수 |
 | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | DB 접속 정보 |
 | `FOOTBALL_DATA_API_KEY` | football-data.org API 키 |
 
@@ -66,4 +67,3 @@ curl http://127.0.0.1:8080/matches
 ```
 
 gitops cicd test
-
