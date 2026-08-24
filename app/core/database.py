@@ -26,8 +26,8 @@ def get_database_url(url_env_name: str, host_value: Optional[str], fallback_name
 
 WRITABLE_URL = get_database_url(
     "WRITABLE_URL",
-    getattr(settings, "DB_WRITER_HOST", None),
-    "DB_HOST 또는 DB_WRITER_HOST",
+    settings.DB_HOST,
+    "DB_HOST",
 )
 writer_engine = create_engine(
     WRITABLE_URL,
@@ -45,8 +45,8 @@ WriterSessionLocal = sessionmaker(
 # 조회 API는 같은 RDS endpoint에 비동기 드라이버로 연결한다.
 READONLY_URL = get_database_url(
     "READONLY_URL",
-    getattr(settings, "DB_READER_HOST", None),
-    "DB_HOST 또는 DB_READER_HOST",
+    settings.DB_HOST,
+    "DB_HOST",
     driver="postgresql+asyncpg",
 )
 reader_engine = create_async_engine(

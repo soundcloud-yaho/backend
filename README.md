@@ -50,7 +50,6 @@ ALB → FastAPI Pod (Spot Worker 노드그룹, target-type: ip)
 | 변수 | 용도 |
 |---|---|
 | `DB_HOST` | 단일 RDS PostgreSQL endpoint |
-| `DB_WRITER_HOST` / `DB_READER_HOST` | 배포 전환 기간에만 사용하는 기존 호환 변수 |
 | `DB_NAME`, `DB_USER`, `DB_PASSWORD` | DB 접속 정보 |
 | `FOOTBALL_DATA_API_KEY` | football-data.org API 키 |
 
